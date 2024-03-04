@@ -85,48 +85,63 @@ int main(int argc, char **argv) {
 
             // execute
             switch (opcode) {
-            case OP_OP_IMM:
+            case OP_OP_IMM: {
                 handle_op_im(inst, cpu);
                 break;
-            case OP_OP:
+            }
+            case OP_OP: {
                 handle_op_op(inst, cpu);
                 break;
-            case OP_OP_IMM_32:
+            }
+            case OP_OP_IMM_32: {
                 handle_op_im_32(inst, cpu);
                 break;
-            case OP_LUI:
+            }
+            case OP_LUI: {
                 cpu.registers[rd] = inst & 0xfffff000;
                 break;
-            case OP_AUIPC:
+            }
+            case OP_AUIPC: {
                 cpu.registers[rd] = (inst & 0xfffff000) + cpu.pc;
                 break;
+            }
             // TODO: Generate address misaligned exceptions for jump instructions
-            case OP_JAL:
+            case OP_JAL: {
                 offset = get_j_imm(inst);
                 if (rd != 0)
                     cpu.registers[rd] = cpu.pc + 4;
                 cpu.pc += offset - 4;
                 break;
-            case OP_JALR:
+            }
+            case OP_JALR: {
                 offset = get_i_imm(inst);
                 if (rd != 0)
                     cpu.registers[rd] = cpu.pc + 4;
                 cpu.registers[rs1] = (cpu.registers[rs1] + offset) & ~1;
                 break;
-            case OP_BRANCH:
+            }
+            case OP_BRANCH: {
                 handle_op_branch(inst, cpu);
                 break;
-            case OP_LOAD:
+            }
+            case OP_LOAD: {
                 handle_op_load(inst, cpu);
                 break;
-            case OP_STORE:
+            }
+            case OP_STORE: {
                 handle_op_store(inst, cpu);
                 break;
-            case OP_SYSTEM:
+            }
+            case OP_SYSTEM: {
                 auto rc = handle_op_system(inst, cpu);
                 if (rc)
                     return rc.value();
                 break;
+            }
+            case OP_AMO: {
+                handle_op_amo(inst, cpu);
+                break;
+            }
             // FENCE (opcode=OP_MISC_MEM + funct3=FENCE) is handled as a noop
             // No hints are defined (for now atleast)
             }

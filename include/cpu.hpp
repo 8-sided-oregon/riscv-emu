@@ -4,22 +4,32 @@
 #include <cstdint>
 #include <array>
 #include <memory>
+#include <vector>
 
 constexpr std::size_t mem_size = 16 * 1024 * 1024; // 16 MiB
 constexpr std::size_t inst_buf_size = 65536; // 64 KiB
 constexpr std::size_t program_bgn = 0;
 
+struct Reservation {
+    std::size_t addr, inst;
+};
+
+struct HartContext {
+    std::optional<std::size_t> last_lr{std::nullopt};
+};
+
 struct Cpu {
     std::array<int64_t, 32> registers;
     uint64_t pc{program_bgn};
     std::unique_ptr<std::array<uint8_t, mem_size>> memory{ new std::array<uint8_t, mem_size> };
+    std::vector<Reservation> reservations{};
+    std::vector<HartContext> contexts{HartContext {}};
 
-    void dump_regs() {
-        for (std::size_t i = 0; i < registers.size(); i += 2)
-            std::cout << std::format("x{}:\t0x{:016x}\tx{}:\t0x{:016x}\n", 
-                    i, static_cast<uint64_t>(registers[i]), 
-                    i + 1, static_cast<uint64_t>(registers[i + 1]));
-    }
+    std::size_t cur_hart = 0;
+
+    void reserve(std::size_t addr, std::size_t inst);
+    std::optional<std::size_t> invalidate(std::size_t addr);
+    void dump_regs();
 };
 
 enum opcodes {
@@ -56,4 +66,5 @@ void handle_op_op_32(uint32_t inst, Cpu &cpu);
 void handle_op_branch(uint32_t inst, Cpu &cpu);
 void handle_op_load(uint32_t inst, Cpu &cpu);
 void handle_op_store(uint32_t inst, Cpu &cpu);
+void handle_op_amo(uint32_t inst, Cpu &cpu);
 std::optional<int> handle_op_system(uint32_t inst, Cpu &cpu);
